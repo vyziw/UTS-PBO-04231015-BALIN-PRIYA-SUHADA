@@ -1,19 +1,45 @@
-// penambahan struktur dasar
+// penambahan fitur enkapsulasi private set
 
 class Tiket(
     val namaTiket: String,
     val harga: Double,
-    var kuota: Int
-)
+    kuotaAwal: Int
+) {
+    // Data Hiding: kuota tidak bisa diubah sembarangan dari luar
+    var kuota: Int = kuotaAwal
+        private set
 
-class Pembeli(
-    val nama: String,
-    var saldo: Double
-)
+    fun kurangiKuota() {
+        if (kuota > 0) kuota--
+    }
+
+    fun infoTiket() {
+        println("  [INFO] Tiket: $namaTiket | Harga: Rp$harga | Sisa Kuota: $kuota")
+    }
+}
+
+class Pembeli(val nama: String, saldoAwal: Double) {
+    // Data Hiding: saldo tidak bisa diubah langsung dari luar
+    var saldo: Double = saldoAwal
+        private set
+
+    fun bayar(jumlah: Double) {
+        if (saldo >= jumlah) saldo -= jumlah
+    }
+
+    fun infoSaldo() {
+        println("  [INFO] Saldo $nama: Rp$saldo")
+    }
+}
 
 class Panitia(val namaPanitia: String) {
     fun prosesPembelian(pembeli: Pembeli, tiket: Tiket) {
-        println("${pembeli.nama} membeli tiket ${tiket.namaTiket}")
+        println("\n--- ${pembeli.nama} mencoba membeli '${tiket.namaTiket}' ---")
+        pembeli.bayar(tiket.harga)
+        tiket.kurangiKuota()
+        println("✅ Pembelian diproses.")
+        pembeli.infoSaldo()
+        tiket.infoTiket()
     }
 }
 
@@ -23,5 +49,7 @@ fun main() {
     val panitia = Panitia("Rubian")
 
     println("=== SIMULASI TICKETING EVENT BEM ITK ===")
+    tiketVIP.infoTiket()
+    budi.infoSaldo()
     panitia.prosesPembelian(budi, tiketVIP)
 }
