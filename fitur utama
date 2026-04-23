@@ -1,5 +1,4 @@
-// penambahan fitur kode promo
-
+// fixing stuff and such
 import java.time.LocalDate
 
 class Tiket(
@@ -12,6 +11,9 @@ class Tiket(
     var kuota: Int = kuotaAwal
         private set
 
+    var totalPendapatan: Double = 0.0
+        private set
+
     fun verifikasiPromo(kodeInput: String, tanggalBeli: LocalDate): Boolean {
         if (kodeInput != kodePromoValid) return false
         if (tanggalBeli.isAfter(tanggalKadaluarsa)) return false
@@ -19,7 +21,10 @@ class Tiket(
     }
 
     fun kurangiKuota(hargaBayar: Double) {
-        if (kuota > 0) kuota--
+        if (kuota > 0) {
+            kuota--
+            totalPendapatan += hargaBayar
+        }
     }
 
     fun infoTiket() {
@@ -49,13 +54,11 @@ class Panitia(val namaPanitia: String) {
     ) {
         println("\n--- ${pembeli.nama} mencoba membeli '${tiket.namaTiket}' ---")
 
-        // Validasi 1: Cek kuota
         if (tiket.kuota <= 0) {
             println("❌ GAGAL: Tiket '${tiket.namaTiket}' sudah SOLD OUT!")
             return
         }
 
-        // Validasi 2: Cek kode promo jika diinput
         val hargaFinal: Double
         if (kodePromoInput.isNotEmpty()) {
             val promoSah = tiket.verifikasiPromo(kodePromoInput, tanggalBeli)
@@ -69,13 +72,11 @@ class Panitia(val namaPanitia: String) {
             hargaFinal = tiket.harga
         }
 
-        // Validasi 3: Cek saldo
         if (pembeli.saldo < hargaFinal) {
             println("❌ GAGAL: Saldo ${pembeli.nama} tidak mencukupi. (Butuh: Rp$hargaFinal | Saldo: Rp${pembeli.saldo})")
             return
         }
 
-        // Eksekusi transaksi
         pembeli.bayar(hargaFinal)
         tiket.kurangiKuota(hargaFinal)
         println("✅ SUKSES: ${pembeli.nama} berhasil membeli tiket '${tiket.namaTiket}'!")
@@ -87,19 +88,40 @@ fun main() {
     val hariIni      = LocalDate.of(2026, 4, 23)
     val promoExpired = LocalDate.of(2026, 4, 20)
 
-    val tiketVIP    = Tiket("Konser BEM VIP", 250000.0, 2, "BEM2026", LocalDate.of(2026, 5, 1))
-    val tiketVIPExp = Tiket("Konser BEM VIP Expired", 250000.0, 2, "BEM2026", promoExpired)
-    val sari        = Pembeli("Sari", 200000.0)
+    val tiketVIP    = Tiket("Konser BEM VIP",     250000.0, 2, "BEM2026", LocalDate.of(2026, 5, 1))
+    val tiketRegul  = Tiket("Konser BEM Reguler", 100000.0, 1, "BEM2026", LocalDate.of(2026, 5, 1))
+    val tiketVIPExp = Tiket("Konser BEM VIP",     250000.0, 2, "BEM2026", promoExpired)
+    val budi        = Pembeli("Budi",  300000.0)
+    val sari        = Pembeli("Sari",  200000.0)
+    val andi        = Pembeli("Andi",   50000.0)
     val panitia     = Panitia("Rubian")
 
     println("=== SIMULASI TICKETING EVENT BEM ITK ===")
+    tiketVIP.infoTiket()
+    tiketRegul.infoTiket()
 
-    // Skenario: GAGAL - kode promo salah
+    // Skenario 1: SUKSES - beli tiket reguler tanpa promo
+    panitia.prosesPembelian(budi, tiketRegul, "", hariIni)
+
+    // Skenario 2: GAGAL - tiket reguler sudah SOLD OUT
+    panitia.prosesPembelian(sari, tiketRegul, "", hariIni)
+
+    // Skenario 3: GAGAL - kode promo salah
     panitia.prosesPembelian(sari, tiketVIP, "SALAH123", hariIni)
 
-    // Skenario: GAGAL - kode promo kadaluarsa
+    // Skenario 4: GAGAL - kode promo kadaluarsa
     panitia.prosesPembelian(sari, tiketVIPExp, "BEM2026", hariIni)
 
-    // Skenario: SUKSES - promo valid, diskon 20%
+    // Skenario 5: SUKSES - promo valid, diskon 20%
     panitia.prosesPembelian(sari, tiketVIP, "BEM2026", hariIni)
+
+    // Skenario 6: GAGAL - saldo Andi tidak cukup
+    panitia.prosesPembelian(andi, tiketVIP, "", hariIni)
+
+    println("\n=== REKAP AKHIR ===")
+    budi.infoSaldo()
+    sari.infoSaldo()
+    andi.infoSaldo()
+    tiketVIP.infoTiket()
+    tiketRegul.infoTiket()
 }
