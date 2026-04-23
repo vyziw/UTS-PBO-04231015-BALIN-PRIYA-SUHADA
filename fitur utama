@@ -1,0 +1,27 @@
+// penambahan struktur dasar
+
+class Tiket(
+    val namaTiket: String,
+    val harga: Double,
+    var kuota: Int
+)
+
+class Pembeli(
+    val nama: String,
+    var saldo: Double
+)
+
+class Panitia(val namaPanitia: String) {
+    fun prosesPembelian(pembeli: Pembeli, tiket: Tiket) {
+        println("${pembeli.nama} membeli tiket ${tiket.namaTiket}")
+    }
+}
+
+fun main() {
+    val tiketVIP = Tiket("Konser BEM VIP", 250000.0, 5)
+    val budi = Pembeli("Budi", 300000.0)
+    val panitia = Panitia("Rubian")
+
+    println("=== SIMULASI TICKETING EVENT BEM ITK ===")
+    panitia.prosesPembelian(budi, tiketVIP)
+}
