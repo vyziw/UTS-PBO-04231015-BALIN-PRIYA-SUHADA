@@ -1,14 +1,24 @@
-// penambahan validasi kuota dan saldo
+// penambahan fitur kode promo
+
+import java.time.LocalDate
 
 class Tiket(
     val namaTiket: String,
     val harga: Double,
-    kuotaAwal: Int
+    kuotaAwal: Int,
+    private val kodePromoValid: String,
+    private val tanggalKadaluarsa: LocalDate
 ) {
     var kuota: Int = kuotaAwal
         private set
 
-    fun kurangiKuota() {
+    fun verifikasiPromo(kodeInput: String, tanggalBeli: LocalDate): Boolean {
+        if (kodeInput != kodePromoValid) return false
+        if (tanggalBeli.isAfter(tanggalKadaluarsa)) return false
+        return true
+    }
+
+    fun kurangiKuota(hargaBayar: Double) {
         if (kuota > 0) kuota--
     }
 
@@ -31,7 +41,12 @@ class Pembeli(val nama: String, saldoAwal: Double) {
 }
 
 class Panitia(val namaPanitia: String) {
-    fun prosesPembelian(pembeli: Pembeli, tiket: Tiket) {
+    fun prosesPembelian(
+        pembeli: Pembeli,
+        tiket: Tiket,
+        kodePromoInput: String,
+        tanggalBeli: LocalDate
+    ) {
         println("\n--- ${pembeli.nama} mencoba membeli '${tiket.namaTiket}' ---")
 
         // Validasi 1: Cek kuota
@@ -40,36 +55,51 @@ class Panitia(val namaPanitia: String) {
             return
         }
 
-        // Validasi 2: Cek saldo
-        if (pembeli.saldo < tiket.harga) {
-            println("❌ GAGAL: Saldo ${pembeli.nama} tidak mencukupi. (Butuh: Rp${tiket.harga} | Saldo: Rp${pembeli.saldo})")
+        // Validasi 2: Cek kode promo jika diinput
+        val hargaFinal: Double
+        if (kodePromoInput.isNotEmpty()) {
+            val promoSah = tiket.verifikasiPromo(kodePromoInput, tanggalBeli)
+            if (!promoSah) {
+                println("❌ GAGAL: Kode promo '$kodePromoInput' tidak valid atau sudah kadaluarsa!")
+                return
+            }
+            hargaFinal = tiket.harga * 0.8
+            println("  ✔ Kode promo valid! Diskon 20% diterapkan.")
+        } else {
+            hargaFinal = tiket.harga
+        }
+
+        // Validasi 3: Cek saldo
+        if (pembeli.saldo < hargaFinal) {
+            println("❌ GAGAL: Saldo ${pembeli.nama} tidak mencukupi. (Butuh: Rp$hargaFinal | Saldo: Rp${pembeli.saldo})")
             return
         }
 
         // Eksekusi transaksi
-        pembeli.bayar(tiket.harga)
-        tiket.kurangiKuota()
+        pembeli.bayar(hargaFinal)
+        tiket.kurangiKuota(hargaFinal)
         println("✅ SUKSES: ${pembeli.nama} berhasil membeli tiket '${tiket.namaTiket}'!")
-        println("   Sisa Saldo: Rp${pembeli.saldo} | Sisa Kuota: ${tiket.kuota}")
+        println("   Harga Dibayar: Rp$hargaFinal | Sisa Saldo: Rp${pembeli.saldo} | Sisa Kuota: ${tiket.kuota}")
     }
 }
 
 fun main() {
-    val tiketRegul = Tiket("Konser BEM Reguler", 100000.0, 1)
-    val budi = Pembeli("Budi", 300000.0)
-    val sari = Pembeli("Sari", 50000.0)
-    val panitia = Panitia("Rubian")
+    val hariIni      = LocalDate.of(2026, 4, 23)
+    val promoExpired = LocalDate.of(2026, 4, 20)
+
+    val tiketVIP    = Tiket("Konser BEM VIP", 250000.0, 2, "BEM2026", LocalDate.of(2026, 5, 1))
+    val tiketVIPExp = Tiket("Konser BEM VIP Expired", 250000.0, 2, "BEM2026", promoExpired)
+    val sari        = Pembeli("Sari", 200000.0)
+    val panitia     = Panitia("Rubian")
 
     println("=== SIMULASI TICKETING EVENT BEM ITK ===")
-    tiketRegul.infoTiket()
 
-    // Skenario 1: SUKSES
-    panitia.prosesPembelian(budi, tiketRegul)
+    // Skenario: GAGAL - kode promo salah
+    panitia.prosesPembelian(sari, tiketVIP, "SALAH123", hariIni)
 
-    // Skenario 2: GAGAL - Sold Out
-    panitia.prosesPembelian(sari, tiketRegul)
+    // Skenario: GAGAL - kode promo kadaluarsa
+    panitia.prosesPembelian(sari, tiketVIPExp, "BEM2026", hariIni)
 
-    // Skenario 3: GAGAL - Saldo kurang
-    val tiketVIP = Tiket("Konser BEM VIP", 250000.0, 3)
-    panitia.prosesPembelian(sari, tiketVIP)
+    // Skenario: SUKSES - promo valid, diskon 20%
+    panitia.prosesPembelian(sari, tiketVIP, "BEM2026", hariIni)
 }
