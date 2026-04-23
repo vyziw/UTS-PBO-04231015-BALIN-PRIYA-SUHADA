@@ -1,11 +1,10 @@
-// penambahan fitur enkapsulasi private set
+// penambahan validasi kuota dan saldo
 
 class Tiket(
     val namaTiket: String,
     val harga: Double,
     kuotaAwal: Int
 ) {
-    // Data Hiding: kuota tidak bisa diubah sembarangan dari luar
     var kuota: Int = kuotaAwal
         private set
 
@@ -19,7 +18,6 @@ class Tiket(
 }
 
 class Pembeli(val nama: String, saldoAwal: Double) {
-    // Data Hiding: saldo tidak bisa diubah langsung dari luar
     var saldo: Double = saldoAwal
         private set
 
@@ -35,21 +33,43 @@ class Pembeli(val nama: String, saldoAwal: Double) {
 class Panitia(val namaPanitia: String) {
     fun prosesPembelian(pembeli: Pembeli, tiket: Tiket) {
         println("\n--- ${pembeli.nama} mencoba membeli '${tiket.namaTiket}' ---")
+
+        // Validasi 1: Cek kuota
+        if (tiket.kuota <= 0) {
+            println("❌ GAGAL: Tiket '${tiket.namaTiket}' sudah SOLD OUT!")
+            return
+        }
+
+        // Validasi 2: Cek saldo
+        if (pembeli.saldo < tiket.harga) {
+            println("❌ GAGAL: Saldo ${pembeli.nama} tidak mencukupi. (Butuh: Rp${tiket.harga} | Saldo: Rp${pembeli.saldo})")
+            return
+        }
+
+        // Eksekusi transaksi
         pembeli.bayar(tiket.harga)
         tiket.kurangiKuota()
-        println("✅ Pembelian diproses.")
-        pembeli.infoSaldo()
-        tiket.infoTiket()
+        println("✅ SUKSES: ${pembeli.nama} berhasil membeli tiket '${tiket.namaTiket}'!")
+        println("   Sisa Saldo: Rp${pembeli.saldo} | Sisa Kuota: ${tiket.kuota}")
     }
 }
 
 fun main() {
-    val tiketVIP = Tiket("Konser BEM VIP", 250000.0, 5)
+    val tiketRegul = Tiket("Konser BEM Reguler", 100000.0, 1)
     val budi = Pembeli("Budi", 300000.0)
+    val sari = Pembeli("Sari", 50000.0)
     val panitia = Panitia("Rubian")
 
     println("=== SIMULASI TICKETING EVENT BEM ITK ===")
-    tiketVIP.infoTiket()
-    budi.infoSaldo()
-    panitia.prosesPembelian(budi, tiketVIP)
+    tiketRegul.infoTiket()
+
+    // Skenario 1: SUKSES
+    panitia.prosesPembelian(budi, tiketRegul)
+
+    // Skenario 2: GAGAL - Sold Out
+    panitia.prosesPembelian(sari, tiketRegul)
+
+    // Skenario 3: GAGAL - Saldo kurang
+    val tiketVIP = Tiket("Konser BEM VIP", 250000.0, 3)
+    panitia.prosesPembelian(sari, tiketVIP)
 }
